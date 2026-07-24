@@ -16,7 +16,6 @@ const RETRY_DELAY_MS = 2_000;
  */
 const FALLBACK_MODELS = [
   'deepseek-ai/deepseek-v4-flash',
-  'deepseek-ai/deepseek-v4',
   'minimaxai/minimax-m3',
   'meta/llama-3.3-70b-instruct'
 ];
