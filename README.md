@@ -13,7 +13,6 @@ Tras pruebas en produccion, estos son los modelos verificados que funcionan actu
 | minimaxai/minimax-m3 | Funciona | Respuestas rapidas (~3-10s), alta confiabilidad |
 | meta/llama-3.3-70b-instruct | Funciona | Lento (~70s) pero util como ultimo recurso |
 | deepseek-ai/deepseek-v4-flash | Inestable | Devuelve 503 (ResourceExhausted) frecuentemente |
-| deepseek-ai/deepseek-v4 | No existe | Devuelve 404, eliminado del catalogo |
 
 La configuracion de fallback prioriza minimaxai/minimax-m3 por su velocidad y confiabilidad.
 
@@ -49,6 +48,7 @@ Copia `.env.example` a `.env` y rellena los valores:
 ```env
 DISCORD_TOKEN=tu_token_aqui
 DISCORD_CHANNEL_ID=123456789012345678
+WEBHOOK_URL=https://discord.com/api/webhooks/...
 NVIDIA_API_KEY=tu_api_key_aqui
 NVIDIA_MODEL=minimaxai/minimax-m3
 
@@ -59,28 +59,7 @@ HISTORY_SIZE=50
 
 Se recomienda usar `minimaxai/minimax-m3` como modelo primario por su velocidad y confiabilidad.
 
-### 3. Crear webhooks en Discord
-
-Por cada personaje, crea un webhook en el canal:
-- Discord -> Canal -> Editar canal -> Integraciones -> Webhooks -> Crear webhook
-- Ponle el nombre del personaje
-- Copia la URL del webhook
-
-### 4. Agregar webhooks al `.env`
-
-```env
-WEBHOOK_SPIDER_MAN=https://discord.com/api/webhooks/...
-WEBHOOK_TONY_STARK=https://discord.com/api/webhooks/...
-WEBHOOK_SAUL_GOODMAN=https://discord.com/api/webhooks/...
-WEBHOOK_L_LAWLIET=https://discord.com/api/webhooks/...
-WEBHOOK_WALTER_WHITE=https://discord.com/api/webhooks/...
-```
-
-### 5. Actualizar avatares en `characters.js`
-
-Reemplaza las URLs de `avatar` con imagenes reales accesibles publicamente (Imgur, CDN, etc.).
-
-### 6. Habilitar el intent de contenido de mensajes
+### 3. Habilitar el intent de contenido de mensajes
 
 En el [Portal de Desarrolladores de Discord](https://discord.com/developers/applications):
 - Tu aplicacion -> Bot -> Message Content Intent -> Activar
@@ -99,21 +78,17 @@ npm run dev
 
 ## Agregar un nuevo personaje
 
-1. Crea el webhook en Discord y copia la URL.
-2. Anade la URL al `.env`:
-   ```env
-   WEBHOOK_NOMBRE=https://discord.com/api/webhooks/...
-   ```
-3. Agrega la entrada en `characters.js`:
-   ```js
-   {
-     name: 'Nombre del personaje',
-     description: 'Descripcion de su personalidad y forma de hablar.',
-     avatar: 'https://url-de-su-imagen.png',
-     webhookUrl: process.env.WEBHOOK_NOMBRE ?? '',
-   }
-   ```
-4. Reinicia el bot. Listo.
+Agrega la entrada en `characters.js`:
+
+```js
+{
+  name: 'Nombre del personaje',
+  description: 'Descripcion de su personalidad y forma de hablar.',
+  avatar: 'https://url-de-su-imagen.png',
+}
+```
+
+Reemplaza la URL de `avatar` con una imagen real accesible publicamente (Imgur, CDN, etc.). Reinicia el bot. Listo.
 
 ---
 
