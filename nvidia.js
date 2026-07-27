@@ -241,18 +241,14 @@ export async function askNvidia(forceCharacter = null, replyToAuthor = null) {
   const messages = buildMessages(forceCharacter, replyToAuthor);
   const startTime = Date.now();
 
-  // Modelos a probar en orden optimizado:
-  // 1. Rápidos (llama-3.1-8b) para respuestas inmediatas
-  // 2. Coherentes (llama-3.3-70b o el configurado en .env)
-  // 3. Respaldo (deepseek, minimaxai)
-  const primaryModel = config.nvidia.model;
+  // Orden de modelos:
+  // 1. Coherente (70B) para respuestas de calidad
+  // 2. Rápido (8B) como respaldo inmediato
+  // 3. Respaldos adicionales
+  // Hardcodeado para que funcione sin importar el .env remoto
   const modelsToTry = [
-    // Primero los modelos que responden rapido como fallback inmediato
-    'meta/llama-3.1-8b-instruct',
-    // Luego el modelo configurado (70b para coherencia)
-    primaryModel,
-    // Finalmente respaldos, evitando duplicados
-    ...FALLBACK_MODELS.filter(m => m !== 'meta/llama-3.1-8b-instruct' && m !== primaryModel)
+    'meta/llama-3.3-70b-instruct',
+    ...FALLBACK_MODELS.filter(m => m !== 'meta/llama-3.3-70b-instruct')
   ];
 
   for (const model of modelsToTry) {
