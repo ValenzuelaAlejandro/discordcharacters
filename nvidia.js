@@ -241,31 +241,30 @@ export async function askNvidia(forceCharacter = null, replyToAuthor = null) {
   const messages = buildMessages(forceCharacter, replyToAuthor);
   const startTime = Date.now();
 
-  // 1. Probar el modelo configurado por el usuario
+  // Modelos a probar en orden optimizado:
+  // 1. Rápidos (llama-3.1-8b) para respuestas inmediatas
+  // 2. Coherentes (llama-3.3-70b o el configurado en .env)
+  // 3. Respaldo (deepseek, minimaxai)
   const primaryModel = config.nvidia.model;
-  console.log(`[nvidia] Modelo primario: ${primaryModel}`);
+  const modelsToTry = [
+    // Primero los modelos que responden rapido como fallback inmediato
+    'meta/llama-3.1-8b-instruct',
+    // Luego el modelo configurado (70b para coherencia)
+    primaryModel,
+    // Finalmente respaldos, evitando duplicados
+    ...FALLBACK_MODELS.filter(m => m !== 'meta/llama-3.1-8b-instruct' && m !== primaryModel)
+  ];
 
-  const primaryResult = await tryModel(primaryModel, messages, startTime);
-  if (primaryResult) {
-    return primaryResult;
-  }
-
-  // 2. Fallback: probar modelos de respaldo en orden
-  console.warn(`[nvidia] El modelo primario "${primaryModel}" falló. Probando respaldos...`);
-
-  for (const fallbackModel of FALLBACK_MODELS) {
-    // Saltar si es el mismo que el primario (ya lo intentamos)
-    if (fallbackModel === primaryModel) continue;
-
-    console.log(`[nvidia] ---> Fallback a: ${fallbackModel}`);
-    const result = await tryModel(fallbackModel, messages, startTime);
+  for (const model of modelsToTry) {
+    console.log(`[nvidia] Intentando modelo: ${model}`);
+    const result = await tryModel(model, messages, startTime);
     if (result) {
-      console.log(`[nvidia] ✓ Fallback exitoso con modelo: ${fallbackModel}`);
+      console.log(`[nvidia] ✓ Respuesta exitosa con modelo: ${model}`);
       return result;
     }
   }
 
-  // 3. Todos los modelos fallaron
+  // Todos los modelos fallaron
   const totalElapsed = ((Date.now() - startTime) / 1000).toFixed(1);
   console.error(`[nvidia] Todos los modelos agotados tras ${totalElapsed}s. No se pudo obtener respuesta.`);
   return null;
