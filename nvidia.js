@@ -3,7 +3,7 @@ import { formatHistoryForPrompt } from './history.js';
 import { characters, formatCharactersForPrompt } from './characters.js';
 
 // Timeout en ms para la llamada a la API
-const API_TIMEOUT_MS = 5_000;
+const API_TIMEOUT_MS = 20_000;
 
 // Reintentos automáticos ante errores 5xx o fallos de red (por modelo)
 const MAX_RETRIES = 2;
