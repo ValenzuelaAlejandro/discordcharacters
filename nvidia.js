@@ -3,7 +3,7 @@ import { formatHistoryForPrompt } from './history.js';
 import { characters, formatCharactersForPrompt } from './characters.js';
 
 // Timeout en ms para la llamada a la API
-const API_TIMEOUT_MS = 30_000;
+const API_TIMEOUT_MS = 5_000;
 
 // Reintentos automáticos ante errores 5xx o fallos de red (por modelo)
 const MAX_RETRIES = 2;
@@ -15,7 +15,9 @@ const RETRY_DELAY_MS = 2_000;
  * Nombres oficiales del catálogo NVIDIA NIM.
  */
 const FALLBACK_MODELS = [
+  // Los que responden rápido se prueban primero
   'deepseek-ai/deepseek-v4-flash',
+  'meta/llama-3.1-8b-instruct',
   'minimaxai/minimax-m3',
   'meta/llama-3.3-70b-instruct'
 ];
