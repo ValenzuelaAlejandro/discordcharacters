@@ -5,28 +5,24 @@ import { characters, formatCharactersForPrompt } from './characters.js';
 // Timeout en ms para la llamada a la API
 const API_TIMEOUT_MS = 20_000;
 
-// Reintentos automáticos ante errores 5xx o fallos de red (por modelo)
+// Reintentos automáticos ante errores transitorios
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 2_000;
 
 /**
- * Lista de modelos de respaldo ordenados por preferencia.
- * Si el modelo configurado en .env falla, se probarán estos en orden.
- * Nombres oficiales del catálogo NVIDIA NIM.
+ * Modelos en orden de prioridad.
+ * Se prueba cada uno; si falla pasa al siguiente.
  */
-const FALLBACK_MODELS = [
-  // Modelos que funcionan con API key gratuita
-  'nvidia/llama-3.3-nemotron-super-49b-v1',
-  'deepseek-ai/deepseek-v4-flash',
-  'z-ai/glm-5.2'
+const MODELS = [
+  'nvidia/llama-3.3-nemotron-super-49b-v1',  // ~4s, coherente
+  'deepseek-ai/deepseek-v4-flash',             // ~2-4s
+  'z-ai/glm-5.2'                               // ~8s, respaldo
 ];
 
 /**
  * Extrae el primer objeto JSON válido de un texto libre contando llaves.
- * Más robusto que un regex non-greedy para JSON anidado.
  */
 function extractJSON(text) {
-  // Limpieza previa de posibles tags de razonamiento (ej: DeepSeek o Nemotron Reasoning)
   const cleanText = text.replace(/<think[\s\S]*?<\/think>/gi, '').trim();
 
   const start = cleanText.indexOf('{');
@@ -133,10 +129,6 @@ ${forceInstruction} Responde únicamente con el JSON. Recuerda: la respuesta deb
 
 /**
  * Intenta obtener una respuesta de un modelo específico de NVIDIA.
- * @param {string} modelName - Nombre del modelo (ej: "deepseek-ai/deepseek-r1")
- * @param {Array} messages - Array de mensajes estilo OpenAI
- * @param {number} startTime - Timestamp de inicio para medir tiempos
- * @returns {Promise<{character: string, message: string, replyTo: string|null}|null>}
  */
 async function tryModel(modelName, messages, startTime) {
   console.log(`[nvidia] Intentando modelo: ${modelName}`);
@@ -196,7 +188,7 @@ async function tryModel(modelName, messages, startTime) {
         return null;
       }
 
-      // Guardia anti-placeholder: detecta si el modelo devolvió el template literal
+      // Guardia anti-placeholder
       const isTemplateLiteral =
         parsed.character?.includes('<') ||
         parsed.message?.includes('<') ||
@@ -219,7 +211,7 @@ async function tryModel(modelName, messages, startTime) {
         console.warn(`[nvidia] [${modelName}] Error transitorio tras ${elapsed}s (intento ${attempt}): ${err.message}`);
       } else {
         console.error(`[nvidia] [${modelName}] Error definitivo tras ${elapsed}s: ${err.message}`);
-        return null; // Modelo agotó sus reintentos
+        return null;
       }
     }
   }
@@ -228,29 +220,17 @@ async function tryModel(modelName, messages, startTime) {
 }
 
 /**
- * Realiza una llamada a la API de NVIDIA con fallback automático entre modelos.
- * Primero prueba el modelo configurado en .env (NVIDIA_MODEL).
- * Si falla, prueba los modelos de FALLBACK_MODELS en orden hasta que uno funcione.
+ * Prueba los modelos en orden hasta que uno responda.
  *
- * @param {string|null} forceCharacter - Nombre del personaje a forzar (si lo hay)
- * @param {string|null} replyToAuthor - Nombre del usuario/personaje al que se está respondiendo (si lo hay)
+ * @param {string|null} forceCharacter - Personaje a forzar
+ * @param {string|null} replyToAuthor - Usuario al que se responde
  * @returns {Promise<{character: string, message: string, replyTo: string|null}|null>}
  */
 export async function askNvidia(forceCharacter = null, replyToAuthor = null) {
   const messages = buildMessages(forceCharacter, replyToAuthor);
   const startTime = Date.now();
 
-  // Modelos probados con API key gratuita (sin 8B, causa loops):
-  // 1. 49B Nemotron Super: coherente, ~4s
-  // 2. DeepSeek Flash: ~2-4s
-  // 3. GLM-5.2: ~8s, respaldo
-  const modelsToTry = [
-    'nvidia/llama-3.3-nemotron-super-49b-v1',
-    'deepseek-ai/deepseek-v4-flash',
-    'z-ai/glm-5.2'
-  ];
-
-  for (const model of modelsToTry) {
+  for (const model of MODELS) {
     console.log(`[nvidia] Intentando modelo: ${model}`);
     const result = await tryModel(model, messages, startTime);
     if (result) {
@@ -259,8 +239,7 @@ export async function askNvidia(forceCharacter = null, replyToAuthor = null) {
     }
   }
 
-  // Todos los modelos fallaron
   const totalElapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-  console.error(`[nvidia] Todos los modelos agotados tras ${totalElapsed}s. No se pudo obtener respuesta.`);
+  console.error(`[nvidia] Todos los modelos agotados tras ${totalElapsed}s.`);
   return null;
 }
