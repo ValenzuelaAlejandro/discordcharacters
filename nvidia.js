@@ -15,11 +15,10 @@ const RETRY_DELAY_MS = 2_000;
  * Nombres oficiales del catálogo NVIDIA NIM.
  */
 const FALLBACK_MODELS = [
-  // Modelos llama primero
-  'meta/llama-3.1-8b-instruct',
-  'meta/llama-3.3-70b-instruct',
+  // Modelos que funcionan con API key gratuita
+  'nvidia/llama-3.3-nemotron-super-49b-v1',
   'deepseek-ai/deepseek-v4-flash',
-  'minimaxai/minimax-m3'
+  'z-ai/glm-5.2'
 ];
 
 /**
