@@ -241,14 +241,14 @@ export async function askNvidia(forceCharacter = null, replyToAuthor = null) {
   const messages = buildMessages(forceCharacter, replyToAuthor);
   const startTime = Date.now();
 
-  // Orden de modelos:
-  // 1. Coherente (70B) para respuestas de calidad
-  // 2. Rápido (8B) como respaldo inmediato
-  // 3. Respaldos adicionales
-  // Hardcodeado para que funcione sin importar el .env remoto
+  // Modelos probados con API key gratuita (sin 8B, causa loops):
+  // 1. 49B Nemotron Super: coherente, ~4s
+  // 2. DeepSeek Flash: ~2-4s
+  // 3. GLM-5.2: ~8s, respaldo
   const modelsToTry = [
-    'meta/llama-3.3-70b-instruct',
-    ...FALLBACK_MODELS.filter(m => m !== 'meta/llama-3.3-70b-instruct')
+    'nvidia/llama-3.3-nemotron-super-49b-v1',
+    'deepseek-ai/deepseek-v4-flash',
+    'z-ai/glm-5.2'
   ];
 
   for (const model of modelsToTry) {
