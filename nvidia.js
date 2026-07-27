@@ -15,11 +15,11 @@ const RETRY_DELAY_MS = 2_000;
  * Nombres oficiales del catálogo NVIDIA NIM.
  */
 const FALLBACK_MODELS = [
-  // Los que responden rápido se prueban primero
-  'deepseek-ai/deepseek-v4-flash',
+  // Modelos llama primero
   'meta/llama-3.1-8b-instruct',
-  'minimaxai/minimax-m3',
-  'meta/llama-3.3-70b-instruct'
+  'meta/llama-3.3-70b-instruct',
+  'deepseek-ai/deepseek-v4-flash',
+  'minimaxai/minimax-m3'
 ];
 
 /**
