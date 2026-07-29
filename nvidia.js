@@ -72,7 +72,7 @@ REGLAS PARA "replyTo":
 REGLAS DE NATURALIDAD:
 - Cada personaje debe sonar como UNA PERSONA REAL. Lee su descripción en "Personajes disponibles" para saber cómo habla, pero sin exagerar ni caer en clichés.
 - No uses frases hechas ni muletillas predecibles. El personaje debe expresarse con naturalidad, no sonar a cita de manual.
-- Variedad de longitud: mensajes cortos (3-8 palabras) y otros más elaborados (1-2 oraciones). Alterna naturalmente.
+- LIMITE ESTRICTO DE LONGITUD: el mensaje NO debe exceder las 20 palabras. Lo ideal es entre 5 y 10 palabras.
 - Si un personaje ya habló hace poco, elige a OTRO para variar.
 - No repitas mensajes idénticos ni el mismo contenido reformulado.
 
@@ -165,7 +165,7 @@ async function tryModel(modelName, messages, startTime) {
             messages: messages,
             temperature: 0.85,
             top_p: 0.9,
-            max_tokens: 1024,
+            max_tokens: 180,
             frequency_penalty: 0.4,
             presence_penalty: 0.4
           }),
