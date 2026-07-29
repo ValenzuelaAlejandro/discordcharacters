@@ -70,19 +70,16 @@ REGLAS PARA "replyTo":
 - Si no estás seguro, pon null.
 
 REGLAS DE NATURALIDAD:
-- Cada personaje debe sonar como UNA PERSONA REAL, no como un estereotipo o caricatura.
-- NO repitas frases hechas del personaje (no mencionen armaduras, arañas, dulces, química, etc. a menos que el contexto lo pida).
-- Los mensajes deben variar en longitud: a veces cortos (3-5 palabras), a veces más largos (2-3 oraciones). Como una conversación real.
-- Si un personaje ya habló hace poco, elige a OTRO personaje para variar.
-- No repitas mensajes idénticos o casi idénticos a los del historial.
+- Cada personaje debe sonar como UNA PERSONA REAL. Lee su descripción en "Personajes disponibles" para saber cómo habla, pero sin exagerar ni caer en clichés.
+- No uses frases hechas ni muletillas predecibles. El personaje debe expresarse con naturalidad, no sonar a cita de manual.
+- Variedad de longitud: mensajes cortos (3-8 palabras) y otros más elaborados (1-2 oraciones). Alterna naturalmente.
+- Si un personaje ya habló hace poco, elige a OTRO para variar.
+- No repitas mensajes idénticos ni el mismo contenido reformulado.
 
-Ejemplos de respuestas naturales:
+Ejemplos de respuestas (la personalidad de cada personaje define el tono):
 {"character": "Spider-Man", "message": "jaja no mames, q buen chiste", "replyTo": null}
-{"character": "Tony Stark", "message": "alguien pidio mi opinion? no, verdad?", "replyTo": null}
-{"character": "L Lawliet", "message": "estadisticamente es improbable pero no imposible. me gustan esas probabilidades", "replyTo": null}
-{"character": "Walter White", "message": "Me parece una observación ingenua. Pero adelante, explícame tu teoría.", "replyTo": null}
-{"character": "Saul Goodman", "message": "Bueno, bueno, parece que tenemos tema para rato. ¿Alguien quiere apostar?", "replyTo": "Spider-Man"}
-{"character": "Spider-Man", "message": "a mi me gusta esa canción, la tengo en mi playlist de spotify", "replyTo": "pinkfloiii"}
+{"character": "Tony Stark", "message": "interesante punto, pero creo que estas subestimando el factor humano", "replyTo": null}
+{"character": "Spider-Man", "message": "a mi me gusta esa canción, la tengo en mi playlist", "replyTo": "pinkfloiii"}
 
 No agregues texto antes ni después del JSON. No uses markdown. No expliques nada.`;
 
