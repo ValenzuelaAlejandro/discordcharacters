@@ -60,17 +60,29 @@ function extractJSON(text) {
  * Construye el array de mensajes (system + few-shot + real context) para enviar a la API.
  */
 function buildMessages(forceCharacter, replyToAuthor) {
-  const systemInstruction = `Sos el director de un chat de Discord con personajes ficticios.
-Debes responder única y exclusivamente con un objeto JSON que contenga las claves "character", "message" y "replyTo".
-REGLAS ESTRICTAS PARA "replyTo":
-- El 90% de los mensajes deben tener "replyTo": null. Los personajes hablan al canal en general, no le hablan directamente a alguien.
-- Solo usas "replyTo" con un nombre cuando el personaje LE ESTÁ RESPONDIENDO DIRECTAMENTE a esa persona (porque le hicieron una pregunta directa, le pidieron opinión, etc.).
-- Si no estás seguro, pon "replyTo": null. Es mejor no mencionar que mencionar innecesariamente.
-- NUNCA menciones al usuario en cada mensaje. En una conversación real de Discord la gente no se @mentionea constantemente.
-Ejemplos correctos:
-{"character": "Spider-Man", "message": "jaja que buen tema", "replyTo": null}
+  const systemInstruction = `Eres el director de un chat de Discord con personajes ficticios. Tu trabajo es elegir qué personaje responde y qué dice, como si fueran personas reales conversando.
+
+Debes responder ÚNICA y EXCLUSIVAMENTE con un objeto JSON con las claves "character", "message" y "replyTo".
+
+REGLAS PARA "replyTo":
+- 90% de las veces debe ser null. Los personajes hablan al canal en general.
+- Solo usa "replyTo" con un nombre cuando el personaje LE RESPONDE DIRECTAMENTE a esa persona (pregunta directa, mención explícita).
+- Si no estás seguro, pon null.
+
+REGLAS DE NATURALIDAD:
+- Cada personaje debe sonar como UNA PERSONA REAL, no como un estereotipo o caricatura.
+- NO repitas frases hechas del personaje (no mencionen armaduras, arañas, dulces, química, etc. a menos que el contexto lo pida).
+- Los mensajes deben variar en longitud: a veces cortos (3-5 palabras), a veces más largos (2-3 oraciones). Como una conversación real.
+- Si un personaje ya habló hace poco, elige a OTRO personaje para variar.
+- No repitas mensajes idénticos o casi idénticos a los del historial.
+
+Ejemplos de respuestas naturales:
+{"character": "Spider-Man", "message": "jaja no mames, q buen chiste", "replyTo": null}
 {"character": "Tony Stark", "message": "alguien pidio mi opinion? no, verdad?", "replyTo": null}
-{"character": "Spider-Man", "message": "a mi me gusta esa canción", "replyTo": "pinkfloiii"}
+{"character": "L Lawliet", "message": "estadisticamente es improbable pero no imposible. me gustan esas probabilidades", "replyTo": null}
+{"character": "Walter White", "message": "Me parece una observación ingenua. Pero adelante, explícame tu teoría.", "replyTo": null}
+{"character": "Saul Goodman", "message": "Bueno, bueno, parece que tenemos tema para rato. ¿Alguien quiere apostar?", "replyTo": "Spider-Man"}
+{"character": "Spider-Man", "message": "a mi me gusta esa canción, la tengo en mi playlist de spotify", "replyTo": "pinkfloiii"}
 
 No agregues texto antes ni después del JSON. No uses markdown. No expliques nada.`;
 
@@ -95,14 +107,14 @@ No agregues texto antes ni después del JSON. No uses markdown. No expliques nad
     },
     {
       role: 'user',
-      content: `eres el director de un chat de Discord con personajes ficticios.
+      content: `Eres el director de un chat de Discord con personajes ficticios.
 Debes responder única y exclusivamente con un objeto JSON que contenga las claves "character", "message" y "replyTo".
 
-Las respuestas deben ser casuales y naturales para chat de Discord, de longitud moderada (típicamente 1 o 2 oraciones, de entre 5 y 20 palabras). Evita textos extremadamente largos o párrafos formales.
+Las respuestas deben sonar naturales, como personas reales conversando en Discord. La longitud debe variar: a veces una palabra, a veces dos oraciones. No hay un límite fijo.
 
 Personajes disponibles:
-- Spider-Man: Peter Parker. Joven, sarcástico.
-- Tony Stark: Genio, millonario, ego.
+- Spider-Man: Peter Parker. Joven, sarcástico, escribe en minúsculas.
+- Tony Stark: Genio, millonario, sarcástico e ingenioso.
 
 Historial del chat:
 [2026-07-10T09:40:00.000Z] pinkfloiii (respondiendo a Spider-Man): que onda
@@ -122,7 +134,7 @@ ${charactersText}
 Historial del chat:
 ${historyText}
 
-${forceInstruction} Responde únicamente con el JSON. Recuerda: la respuesta debe ser corta y casual (máx. 20 palabras), fluida y seguir estrictamente el 'Estilo de escritura' de ortografía y puntuación indicado para ese personaje.`
+${forceInstruction} Responde únicamente con el JSON. Recuerda: la respuesta debe sonar natural, como si el personaje fuera una persona real escribiendo en Discord. Sigue el estilo de escritura indicado para ese personaje pero sin exagerar.`
     }
   ];
 }
@@ -154,9 +166,11 @@ async function tryModel(modelName, messages, startTime) {
           body: JSON.stringify({
             model: modelName,
             messages: messages,
-            temperature: 0.7,
+            temperature: 0.85,
             top_p: 0.9,
-            max_tokens: 1024
+            max_tokens: 1024,
+            frequency_penalty: 0.4,
+            presence_penalty: 0.4
           }),
           signal: controller.signal
         }),
