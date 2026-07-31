@@ -8,8 +8,10 @@ const HISTORY_FILE = join(__dirname, 'history.json');
 
 /**
  * Historial de mensajes recientes del canal.
- * Estructura: array de objetos { author, type, content, timestamp, replyTo }.
+ * Estructura: array de objetos { author, type, content, timestamp, replyTo, replyToContent }.
  *  - type: 'character' si es un personaje del bot, 'user' si es un humano real.
+ *  - replyTo: nombre del autor al que se respondió (o null).
+ *  - replyToContent: contenido del mensaje al que se respondió (o null).
  * Persistencia en history.json para mantener contexto entre reinicios.
  */
 let history = [];
@@ -56,15 +58,17 @@ function saveHistory() {
  * @param {'user'|'character'} type - Tipo de autor
  * @param {string} content - Contenido del mensaje
  * @param {Date}   timestamp - Fecha del mensaje
- * @param {string|null} replyTo - Nombre de la persona a la que se está respondiendo
+ * @param {string|null} replyTo - Nombre del autor al que se está respondiendo
+ * @param {string|null} replyToContent - Contenido del mensaje al que se respondió
  */
-export function addToHistory(author, type, content, timestamp = new Date(), replyTo = null) {
+export function addToHistory(author, type, content, timestamp = new Date(), replyTo = null, replyToContent = null) {
   history.push({
     author,
     type,
     content,
     timestamp: timestamp.toISOString(),
     replyTo,
+    replyToContent,
   });
 
   // Mantener el historial dentro del límite configurado
@@ -78,7 +82,7 @@ export function addToHistory(author, type, content, timestamp = new Date(), repl
 
 /**
  * Devuelve una copia del historial actual.
- * @returns {Array<{author: string, type: string, content: string, timestamp: string, replyTo: string|null}>}
+ * @returns {Array<{author: string, type: string, content: string, timestamp: string, replyTo: string|null, replyToContent: string|null}>}
  */
 export function getHistory() {
   return [...history];
@@ -86,7 +90,8 @@ export function getHistory() {
 
 /**
  * Formatea el historial como texto legible para incluirlo en el prompt del modelo.
- * Incluye fecha/hora local, tipo de autor (personaje o usuario) y contexto de reply.
+ * Incluye fecha/hora local, tipo de autor (PERSONAJE/USUARIO), contexto de reply
+ * y —si existe— el fragmento del mensaje al que se respondió.
  * @returns {string}
  */
 export function formatHistoryForPrompt() {
@@ -102,8 +107,19 @@ export function formatHistoryForPrompt() {
       // Etiqueta de tipo
       const typeLabel = msg.type === 'character' ? '[PERSONAJE]' : '[USUARIO]';
 
-      // Contexto de reply
-      const replyStr = msg.replyTo ? ` → respondiendo a ${msg.replyTo}` : '';
+      // Contexto de reply: a quién y qué dijo
+      let replyStr = '';
+      if (msg.replyTo) {
+        if (msg.replyToContent) {
+          // Truncar el contenido referenciado a 80 chars para no inflar el prompt
+          const snippet = msg.replyToContent.length > 80
+            ? msg.replyToContent.substring(0, 77) + '...'
+            : msg.replyToContent;
+          replyStr = ` ↪ [respondiendo a ${msg.replyTo}: "${snippet}"]`;
+        } else {
+          replyStr = ` ↪ [respondiendo a ${msg.replyTo}]`;
+        }
+      }
 
       return `[${dateStr} ${timeStr}] ${typeLabel} ${msg.author}${replyStr}: ${msg.content}`;
     })

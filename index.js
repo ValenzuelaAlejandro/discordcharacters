@@ -3,9 +3,13 @@
  *
  * Flujo:
  *  1. Llega un mensaje al canal configurado
- *  2. Se guarda en el historial
+ *  2. Se guarda en el historial de forma inmediata
  *  3. Si vino de un humano, se resetea el contador de respuestas automáticas
- *  4. Se delega a responder.maybeRespond() para decidir si y cómo responder
+ *  4. Se agenda una respuesta con debounce adaptativo (Opción B):
+ *     - El timer se resetea con cada mensaje nuevo
+ *     - El delay crece 500ms por cada mensaje acumulado (base 1500ms, tope 5000ms)
+ *     - Cuando el timer dispara, se llama a maybeRespond UNA SOLA VEZ
+ *       con el historial ya completo y los parámetros del último mensaje
  */
 
 import './config.js'; // Validación de variables de entorno al arrancar
@@ -25,6 +29,52 @@ const client = new Client({
 
 // Conjunto de nombres de personajes para detectar mensajes de webhooks propios
 const characterNames = new Set(characters.map((c) => c.name.toLowerCase()));
+
+// ─── Debounce adaptativo pre-generación ───────────────────────────────────────
+// Acumula mensajes durante una ventana corta antes de disparar maybeRespond.
+// Esto evita que el bot genere con contexto incompleto cuando llegan ráfagas.
+const DEBOUNCE_BASE_MS  = 1500; // delay mínimo tras el último mensaje
+const DEBOUNCE_STEP_MS  =  500; // ms extra por cada mensaje acumulado
+const DEBOUNCE_MAX_MS   = 5000; // tope duro aunque sigan llegando mensajes
+
+let debounceTimer   = null; // handle del setTimeout activo
+let debounceCount   = 0;    // mensajes acumulados en la ventana actual
+let debounceParams  = null; // parámetros del ÚLTIMO mensaje (siempre se sobreescribe)
+
+/**
+ * Agenda (o re-agenda) una llamada a maybeRespond con delay adaptativo.
+ * Cada mensaje nuevo resetea el timer y suma 500ms al delay, hasta el tope.
+ * Cuando el timer finalmente dispara, se usa el contexto del mensaje más reciente.
+ *
+ * @param {boolean}     isHumanMessage
+ * @param {string|null} repliedToCharacter
+ * @param {string}      authorName
+ * @param {object}      channel
+ */
+function scheduleResponse(isHumanMessage, repliedToCharacter, authorName, channel) {
+  // Siempre actualizar con los params del último mensaje recibido
+  debounceParams = { isHumanMessage, repliedToCharacter, authorName, channel };
+  debounceCount++;
+
+  // Cancelar el timer previo
+  if (debounceTimer) clearTimeout(debounceTimer);
+
+  // Delay adaptativo: crece con la cantidad de mensajes acumulados, con tope
+  const delay = Math.min(DEBOUNCE_BASE_MS + (debounceCount - 1) * DEBOUNCE_STEP_MS, DEBOUNCE_MAX_MS);
+
+  console.log(`[bot] Debounce: ${debounceCount} msg(s) acumulado(s), esperando ${delay}ms antes de generar.`);
+
+  debounceTimer = setTimeout(() => {
+    debounceTimer  = null;
+    const count    = debounceCount;
+    debounceCount  = 0;
+    const params   = debounceParams;
+    debounceParams = null;
+
+    console.log(`[bot] Ventana cerrada (${count} msg(s)). Generando respuesta con historial completo.`);
+    maybeRespond(params.isHumanMessage, params.repliedToCharacter, params.authorName, params.channel);
+  }, delay);
+}
 
 client.once('clientReady', () => {
   // Cargar historial persistido al conectar
@@ -60,6 +110,7 @@ client.on('messageCreate', async (message) => {
 
   // Detectar si el mensaje es una respuesta (Reply) a otro mensaje
   let replyTo = null;
+  let replyToContent = null;
   let repliedToCharacter = null;
 
   if (message.reference && message.reference.messageId) {
@@ -68,6 +119,7 @@ client.on('messageCreate', async (message) => {
       if (referencedMessage) {
         const refAuthor = referencedMessage.author.username || referencedMessage.author.globalName || 'Desconocido';
         replyTo = refAuthor;
+        replyToContent = referencedMessage.content?.trim() || null;
 
         // Si fue una respuesta a un personaje de nuestra lista, lo priorizamos
         if (characterNames.has(refAuthor.toLowerCase())) {
@@ -109,7 +161,7 @@ client.on('messageCreate', async (message) => {
   // directamente tras enviarlos, así que solo saltamos el addToHistory para evitar
   // duplicados.
   if (!isCharacterWebhook) {
-    addToHistory(authorName, 'user', content, message.createdAt, replyTo);
+    addToHistory(authorName, 'user', content, message.createdAt, replyTo, replyToContent);
   }
 
   // 2. Si fue un humano, resetear el contador de respuestas automáticas
@@ -117,15 +169,12 @@ client.on('messageCreate', async (message) => {
     resetAutoResponseCounter();
   }
 
-  // 3. NO responder a los mensajes de nuestros propios personajes (webhooks).
-  //    Hacerlo crea un bucle: el bot responde a su propio mensaje, genera otro, etc.
-  //    Además, el modelo tiende a repetir respuestas similares al verse en el historial.
-  if (isCharacterWebhook) {
-    return;
-  }
-
-  // 4. Intentar responder (pasando el personaje al que le respondió directamente, el autor del último mensaje y el canal)
-  await maybeRespond(isHumanMessage, repliedToCharacter, authorName, message.channel);
+  // 3. Agendar respuesta con debounce adaptativo.
+  //    - No se llama a maybeRespond directamente; se agenda para que espere
+  //      a que el historial se estabilice en caso de ráfaga de mensajes.
+  //    - Si llega otro mensaje antes de que dispare el timer, se resetea.
+  //    - Los parámetros siempre corresponden al mensaje más reciente.
+  scheduleResponse(isHumanMessage, repliedToCharacter, authorName, message.channel);
 });
 
 // Manejo de errores no capturados

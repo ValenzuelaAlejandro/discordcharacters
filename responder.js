@@ -4,6 +4,22 @@ import { askNvidia } from './nvidia.js';
 import { getCharacterByName, characters } from './characters.js';
 import { userCache, addToHistory, getHistory } from './history.js';
 
+/**
+ * Busca en el historial el contenido más reciente de un autor dado.
+ * Sirve para saber qué dijo alguien antes de que un personaje le responda.
+ * @param {string} authorName
+ * @returns {string|null}
+ */
+function findLastMessageContent(authorName) {
+  const hist = getHistory();
+  for (let i = hist.length - 1; i >= 0; i--) {
+    if (hist[i].author.toLowerCase() === authorName.toLowerCase()) {
+      return hist[i].content || null;
+    }
+  }
+  return null;
+}
+
 // Un único webhook reutilizado para todos los personajes.
 const webhook = new WebhookClient({ url: config.discord.webhookUrl });
 
@@ -156,7 +172,9 @@ async function doRespond(forceCharacter, replyToAuthor, channel) {
 
     clearInterval(typingInterval);
 
-    addToHistory(character.name, 'character', finalMessage, new Date(), replyTo || null);
+    // Buscar el contenido del mensaje al que se responde (para el historial)
+    const replyToContent = replyTo ? findLastMessageContent(replyTo) : null;
+    addToHistory(character.name, 'character', finalMessage, new Date(), replyTo || null, replyToContent);
 
     consecutiveAutoResponses++;
     console.log(
