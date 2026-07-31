@@ -99,10 +99,11 @@ export function formatHistoryForPrompt() {
 
   return history
     .map((msg) => {
-      // Fecha y hora local legible
+      // Fecha y hora en zona horaria de EE.UU. (Pacífico)
       const date = new Date(msg.timestamp);
-      const dateStr = date.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
-      const timeStr = date.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+      const TZ = 'America/Los_Angeles';
+      const dateStr = date.toLocaleDateString('en-US', { timeZone: TZ, day: '2-digit', month: '2-digit', year: 'numeric' });
+      const timeStr = date.toLocaleTimeString('en-US', { timeZone: TZ, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 
       // Etiqueta de tipo
       const typeLabel = msg.type === 'character' ? '[PERSONAJE]' : '[USUARIO]';
