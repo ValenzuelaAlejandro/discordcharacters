@@ -107,7 +107,7 @@ No agregues texto antes ni después del JSON. No uses markdown. No expliques nad
       content: `Eres el director de un chat de Discord con personajes ficticios.
 Debes responder única y exclusivamente con un objeto JSON que contenga las claves "character", "message" y "replyTo".
 
-Las respuestas deben sonar naturales, como personas reales conversando en Discord. La longitud debe variar: a veces una palabra, a veces dos oraciones. No hay un límite fijo.
+Las respuestas deben sonar naturales, como personas reales conversando en Discord. LIMITE ESTRICTO: máximo 20 palabras por mensaje. Lo ideal es entre 5 y 10 palabras.
 
 Personajes disponibles:
 - Spider-Man: Peter Parker. Joven, sarcástico, escribe en minúsculas.
@@ -165,8 +165,8 @@ async function tryModel(modelName, messages, startTime) {
             messages: messages,
             temperature: 0.85,
             top_p: 0.9,
-            max_tokens: 180,
-            frequency_penalty: 0.4,
+            max_tokens: 80,
+            frequency_penalty: 0.7,
             presence_penalty: 0.4
           }),
           signal: controller.signal
