@@ -75,6 +75,7 @@ REGLAS DE NATURALIDAD:
 - LIMITE ESTRICTO DE LONGITUD: el mensaje NO debe exceder las 20 palabras. Lo ideal es entre 5 y 10 palabras.
 - Si un personaje ya habló hace poco, elige a OTRO para variar.
 - No repitas mensajes idénticos ni el mismo contenido reformulado.
+- IMPORTANTE: No uses las mismas palabras clave o estructuras de frases que ya aparecieron en mensajes recientes del mismo personaje. Si el personaje ya dijo algo similar antes, cambia completamente el tema o la perspectiva.
 
 Ejemplos de respuestas (la personalidad de cada personaje define el tono):
 {"character": "Spider-Man", "message": "jaja no mames, q buen chiste", "replyTo": null}
@@ -131,7 +132,12 @@ ${charactersText}
 Historial del chat:
 ${historyText}
 
-${forceInstruction} Responde únicamente con el JSON. Recuerda: la respuesta debe sonar natural, como si el personaje fuera una persona real escribiendo en Discord. Sigue el estilo de escritura indicado para ese personaje pero sin exagerar.`
+${forceInstruction} Responde únicamente con el JSON. Recuerda: la respuesta debe sonar natural, como si el personaje fuera una persona real escribiendo en Discord. Sigue el estilo de escritura indicado para ese personaje pero sin exagerar.
+
+IMPORTANTE - EVITA REPETIR:
+- No uses las mismas palabras o frases que el personaje usó en sus mensajes anteriores.
+- Si el personaje ya comentó algo similar antes, cambia completamente de tema o ángulo.
+- Cada mensaje debe ser único en contenido y estructura.`
     }
   ];
 }
@@ -166,8 +172,8 @@ async function tryModel(modelName, messages, startTime) {
             temperature: 0.85,
             top_p: 0.9,
             max_tokens: 80,
-            frequency_penalty: 0.7,
-            presence_penalty: 0.4
+            frequency_penalty: 0.9,
+            presence_penalty: 0.6
           }),
           signal: controller.signal
         }),

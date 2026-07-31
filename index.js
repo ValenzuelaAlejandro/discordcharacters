@@ -107,7 +107,7 @@ client.on('messageCreate', async (message) => {
 
   // Los mensajes de personajes (webhooks propios) ya se registran en responder.js
   // directamente tras enviarlos, así que solo saltamos el addToHistory para evitar
-  // duplicados — pero SÍ dejamos que maybeRespond evalúe si otro personaje reacciona.
+  // duplicados.
   if (!isCharacterWebhook) {
     addToHistory(authorName, 'user', content, message.createdAt, replyTo);
   }
@@ -117,7 +117,14 @@ client.on('messageCreate', async (message) => {
     resetAutoResponseCounter();
   }
 
-  // 3. Intentar responder (pasando el personaje al que le respondió directamente, el autor del último mensaje y el canal)
+  // 3. NO responder a los mensajes de nuestros propios personajes (webhooks).
+  //    Hacerlo crea un bucle: el bot responde a su propio mensaje, genera otro, etc.
+  //    Además, el modelo tiende a repetir respuestas similares al verse en el historial.
+  if (isCharacterWebhook) {
+    return;
+  }
+
+  // 4. Intentar responder (pasando el personaje al que le respondió directamente, el autor del último mensaje y el canal)
   await maybeRespond(isHumanMessage, repliedToCharacter, authorName, message.channel);
 });
 

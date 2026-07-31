@@ -1,8 +1,8 @@
 import { WebhookClient } from 'discord.js';
 import { config } from './config.js';
 import { askNvidia } from './nvidia.js';
-import { getCharacterByName } from './characters.js';
-import { userCache, addToHistory } from './history.js';
+import { getCharacterByName, characters } from './characters.js';
+import { userCache, addToHistory, getHistory } from './history.js';
 
 // Un único webhook reutilizado para todos los personajes.
 const webhook = new WebhookClient({ url: config.discord.webhookUrl });
@@ -50,6 +50,51 @@ export function resetAutoResponseCounter() {
   consecutiveAutoResponses = 0;
 }
 
+// ─── Verificación de mensaje repetido ─────────────────────────────────────────
+// Comprueba si el mensaje generado es demasiado similar al último mensaje del
+// mismo personaje en el historial, para evitar respuestas redundantes.
+function isMessageRepeat(characterName, message) {
+  const history = getHistory();
+  const msgLower = message.toLowerCase().trim();
+
+  // Buscar hacia atrás el último mensaje del mismo personaje
+  for (let i = history.length - 1; i >= 0; i--) {
+    const entry = history[i];
+    if (entry.type === 'character' && entry.author.toLowerCase() === characterName.toLowerCase()) {
+      const lastMsg = entry.content.toLowerCase().trim();
+
+      // Si el mensaje nuevo es idéntico o uno es subcadena del otro → repetido
+      if (lastMsg === msgLower) {
+        console.log(`[responder] Mensaje idéntico al último de "${characterName}". Descartando.`);
+        return true;
+      }
+
+      // Si uno contiene al otro (ej: "Chad, título que requiere esfuerzo" vs "Chad, título que requiere esfuerzo. ¿Cuál es el criterio?")
+      if (lastMsg.includes(msgLower) || msgLower.includes(lastMsg)) {
+        console.log(`[responder] Mensaje redundante (subcadena) para "${characterName}". Descartando.`);
+        return true;
+      }
+
+      // Si comparten el 70%+ de palabras (en orden), probablemente es variación mínima
+      const lastWords = lastMsg.split(/\s+/);
+      const msgWords = msgLower.split(/\s+/);
+      if (lastWords.length >= 3 && msgWords.length >= 3) {
+        const commonWords = lastWords.filter(w => msgWords.includes(w)).length;
+        const overlap = commonWords / Math.max(lastWords.length, msgWords.length);
+        if (overlap >= 0.7) {
+          console.log(`[responder] Mensaje con ${(overlap * 100).toFixed(0)}% de solapamiento para "${characterName}". Descartando.`);
+          return true;
+        }
+      }
+
+      // Solo revisamos el último mensaje del personaje, no más atrás
+      break;
+    }
+  }
+
+  return false;
+}
+
 // ─── Trabajo real: llama a la API, espera el delay calculado y envía ──────────
 async function doRespond(forceCharacter, replyToAuthor, channel) {
   // Mantener el typing activo renovándolo cada 8s (Discord lo descarta a los ~10s)
@@ -79,6 +124,13 @@ async function doRespond(forceCharacter, replyToAuthor, channel) {
   if (!character) {
     clearInterval(typingInterval);
     console.error(`[responder] Personaje desconocido: "${characterName}". Revisa characters.js`);
+    return false;
+  }
+
+  // Verificar que el mensaje no sea una repetición del último mensaje del mismo personaje
+  if (isMessageRepeat(characterName, message)) {
+    clearInterval(typingInterval);
+    console.log(`[responder] Mensaje descartado por repetición. No se envía nada.`);
     return false;
   }
 
@@ -158,4 +210,3 @@ export async function maybeRespond(isHumanMessage, forceCharacter = null, replyT
   processQueue();
   return true;
 }
-
